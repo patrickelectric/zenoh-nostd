@@ -14,7 +14,6 @@
         <p>
             Listens on Web Serial at 115200 baud for a zenoh client, shows
             <code>potato/ping</code> and puts on <code>potato/set_base_ping</code>.
-            Reload the page after resetting the board.
         </p>
         <button id="serial">Pick serial port</button>
         <div id="ping">-</div>
@@ -44,12 +43,19 @@
                 console.error("Web Serial is not available, use Chrome or Edge");
             }
 
-            document.getElementById("serial").onclick = async () => {
-                const port = await navigator.serial.requestPort();
+            async function open(port) {
                 await port.open({ baudRate: 115200 });
                 set_serial_port(port);
                 console.info("Serial port open, waiting for the device");
+            }
+
+            document.getElementById("serial").onclick = async () => {
+                await open(await navigator.serial.requestPort());
             };
+
+            // A board reset drops the port, start over once it is back.
+            navigator.serial?.addEventListener("connect", () => location.reload());
+            navigator.serial?.getPorts().then(([port]) => port && open(port));
 
             document.getElementById("set").onclick = () => {
                 set_base_ping(Number(document.getElementById("base").value));
