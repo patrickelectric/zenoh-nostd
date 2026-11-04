@@ -1,0 +1,61 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <title>zenoh-nostd potato</title>
+        <style>
+            body { font-family: sans-serif; margin: 2em; }
+            #ping { font-size: 4em; margin: 0.3em 0; }
+            #log { background: #eee; height: 20em; overflow-y: auto; padding: 0.5em; }
+        </style>
+    </head>
+    <body>
+        <h1>zenoh-nostd potato</h1>
+        <p>
+            Listens on Web Serial at 115200 baud for a zenoh client, shows
+            <code>potato/ping</code> and puts on <code>potato/set_base_ping</code>.
+            Reload the page after resetting the board.
+        </p>
+        <button id="serial">Pick serial port</button>
+        <div id="ping">-</div>
+        <input id="base" type="number" value="100" />
+        <button id="set">Set base ping</button>
+        <pre id="log"></pre>
+        <script type="module">
+            import init, { set_serial_port, set_base_ping } from "./z_example.js";
+
+            const log = document.getElementById("log");
+            const ping = document.getElementById("ping");
+            for (const level of ["info", "warn", "error"]) {
+                const original = console[level].bind(console);
+                console[level] = (...args) => {
+                    original(...args);
+                    const line = args.join(" ");
+                    const match = line.match(/^potato\/ping = (.*)$/);
+                    if (match) {
+                        ping.textContent = match[1];
+                    }
+                    log.textContent += `${new Date().toLocaleTimeString()} ${line}\n`;
+                    log.scrollTop = log.scrollHeight;
+                };
+            }
+
+            if (!("serial" in navigator)) {
+                console.error("Web Serial is not available, use Chrome or Edge");
+            }
+
+            document.getElementById("serial").onclick = async () => {
+                const port = await navigator.serial.requestPort();
+                await port.open({ baudRate: 115200 });
+                set_serial_port(port);
+                console.info("Serial port open, waiting for the device");
+            };
+
+            document.getElementById("set").onclick = () => {
+                set_base_ping(Number(document.getElementById("base").value));
+            };
+
+            init();
+        </script>
+    </body>
+</html>
