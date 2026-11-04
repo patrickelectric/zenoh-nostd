@@ -1,3 +1,5 @@
+/* @ts-self-types="./z_example.d.ts" */
+
 export function main() {
     wasm.main();
 }
